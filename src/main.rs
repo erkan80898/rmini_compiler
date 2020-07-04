@@ -43,6 +43,17 @@ macro_rules! s{
     };
 }
 
+macro_rules! e{
+    () => {
+        NFA::e()
+    };
+}
+
+macro_rules! dfa{
+    ($x:expr) => {
+        DFA::from_nfa($x)
+    };
+}
 
 #[derive(Debug)]
 struct State{
@@ -51,6 +62,7 @@ struct State{
     char_transitions:HashMap<char,HashSet<HashedState>>,
     empty_transitions:HashSet<HashedState>
 }
+
 #[derive(Debug)]
 struct HashedState(Rc<RefCell<State>>);
 
@@ -78,6 +90,14 @@ impl Clone for HashedState{
 impl Display for HashedState{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.borrow().state_num)
+    }
+}
+
+impl Drop for HashedState{
+    fn drop(&mut self) {
+        unsafe {
+            STATE_COUNT = 0;
+        }
     }
 }
 
@@ -113,7 +133,7 @@ impl State{
         self.is_final = final_state;
     }
 
-    fn get_final_states(&self) -> Vec<&HashedState>{
+    fn get_final_states(&self) -> Vec<HashedState>{
         if self.empty_transitions.len() + self.char_transitions.len() == 0{
             return vec![]
         }
@@ -121,6 +141,7 @@ impl State{
         self.empty_transitions.iter()
         .chain(self.char_transitions.values().flatten())
         .filter(|&x|x.0.borrow().is_final == true)
+        .cloned()
         .collect()
     }
 }
@@ -130,6 +151,12 @@ struct NFA{
     start:HashedState,
     exit:HashedState
 }
+
+/*impl Display for NFA{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "START: ({}) -> EXIT: ({})", self.start,self.exit)
+    }
+}*/
 
 impl NFA{
 
@@ -200,20 +227,21 @@ impl NFA{
         part1.exit.0.borrow_mut().set_final(false);
         part2.exit.0.borrow_mut().set_final(true);
         part1.exit.0.borrow_mut().connect_empty(part2.start);
-
+        
         Self{
-            start:part1.start,
-            exit:part2.exit
+            start:part1.start.clone(),
+            exit:part2.exit.clone()
         }
     }
 
-    fn empty_string_closure(state: &HashedState,ch:&char) -> HashSet<HashedState>{
-        let mut result:HashSet<HashedState> = state.0
-        .borrow()
-        .empty_transitions
-        .clone();
+    fn empty_string_closure(states: HashSet<HashedState>,ch:&char) -> HashSet<HashedState>{
         
-        result.insert(state.clone());
+        
+        let mut result:HashSet<HashedState> = HashSet::new();
+        
+        for state in states{
+            result.extend(state.0.borrow().empty_transitions.clone());
+        }
 
         let mut answer = HashSet::new();
 
@@ -222,27 +250,22 @@ impl NFA{
                 answer.extend::<HashSet<HashedState>>(val.into_iter().cloned().collect());
             }
         }
-
         answer
     }
 
 }
 
 struct DFA{
-    table:HashMap<(HashedState,char),HashSet<HashedState>>
+    table:HashMap<(Vec<HashedState>,char),HashSet<HashedState>>
 }
 
 impl Display for DFA{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut z = write!(f,"");
-        for (x,y) in self.table.iter(){
-            z = write!(f, "(State:{}, Input: {}) --> ",x.0, x.1);
-            for state in y.iter(){
-                for finals in state.0.borrow().get_final_states(){
-                    z = write!(f, "(Final State: {})",finals);
-                }
+        for (x,y) in self.table.iter(){            
+            for state in x.0.iter(){
+                z = write!(f, "(States: ({}), Input: {}) --> (Exit: {:#?})\n\n\n",state, x.1,y.iter().map(|x| x.0.borrow().get_final_states()));
             }
-            z = write!(f,"\n");
         }
         z
     }
@@ -250,28 +273,30 @@ impl Display for DFA{
 
 impl DFA{
     pub fn from_nfa(nfa:NFA) -> Self{
-        let start = nfa.start;
-        let mut Q = HashSet::new();
-        let mut work_list = vec![start.clone()];
+        let mut start = HashSet::new();
+        start.insert(nfa.start);
+        let mut Q = vec![HashSet::new()];
+        let mut work_list = vec![HashSet::new()];
+        work_list.push(start.clone());
         let mut table = HashMap::new();
-        Q.insert(start);
+        Q.push(start);
 
         while !work_list.is_empty(){
             let current = work_list.pop().unwrap();
                 for ch in ALPHABET.iter(){
-                    let x = current.clone();
-
-                    let t = NFA::empty_string_closure(&x,ch);
+                    let t = NFA::empty_string_closure(current.clone(),ch);
 
                     if t.len() == 0{
                         continue;
                     }
 
-                    table.insert((x, *ch),t.clone());
+                    table.insert((current.iter().cloned().collect(), *ch),t.clone());
 
-                    for state in t{
-                        if !work_list.contains(&state){
-                            work_list.push(state);
+                    for set in t.iter(){
+                        if !t.contains(&set){
+                            work_list.push(t.clone());
+                            Q.push(t);
+                            break;
                         }
                     }
                 }
@@ -286,9 +311,13 @@ impl DFA{
 fn main() {
 
     //p(aaa|bbb|ccc)(aaa|bbb|ccc)z
-    let nfa1 = or!(s!(s!(c!('a'),c!('a')),c!('a')),s!(s!(c!('b'),c!('b')),c!('b')));
-    let nfa2 = or!(c!('y'),s!(s!(c!('c'),c!('c')),c!('c')));
-    let dfa = DFA::from_nfa(s!(nfa1,nfa2));
-    println!("{}",dfa);
+
+    let nfa1 = or!(c!('a'),c!('b'));
+    //println!("{}",nfa1);
+    //println!("{}",dfa!(or!(c!('a'),c!('b'))));
+
+    let nfa2 = s!(or!(c!('a'),c!('b')),c!('z'));
+    println!("{}",dfa!(nfa2));
+//    println!("{}",dfa!(s!(or!(c!('a'),c!('b')),c!('z'))));
 
 }

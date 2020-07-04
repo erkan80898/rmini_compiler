@@ -1,0 +1,47 @@
+[33mcommit cde4a0b5fb43a0ec1d9e7452dd68ad3df076a12f[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m)[m
+Author: Erkan <erkan808987@gmail.com>
+Date:   Sat Jul 4 14:51:08 2020 -0400
+
+    working
+
+[33mcommit bb739838058e69cf03b6b7e29abf2800bafa5b5b[m
+Author: Erkan <erkan808987@gmail.com>
+Date:   Sat Jul 4 13:55:32 2020 -0400
+
+    fixed my eplison closure and reformated display
+
+[33mcommit 9166634f1afadd9d4c703537a2ad3b07bb84d83c[m
+Author: Erkan <erkan808987@gmail.com>
+Date:   Sat Jul 4 06:39:33 2020 -0400
+
+    need 2 work some things out
+
+[33mcommit a14152e10fe7666e406e10ec8327066e4e4c649c[m
+Author: Erkan <erkan808987@gmail.com>
+Date:   Sat Jul 4 03:44:12 2020 -0400
+
+    implemented display and other more sopshicated debugging tools
+
+[33mcommit 41923049dc2ec4fa42bbb4e722716d6abb89e512[m
+Author: Erkan <erkan808987@gmail.com>
+Date:   Sat Jul 4 03:29:27 2020 -0400
+
+    making progress
+
+[33mcommit bfdd81573cc5ce2ad02dacd543bca3bb571aa288[m
+Author: Erkan <erkan808987@gmail.com>
+Date:   Sat Jul 4 00:35:43 2020 -0400
+
+    changed the data structures. using hashsets now, instead of vectors
+
+[33mcommit 39c3040834039ca5fcfbe96b36bf640f0dc1b7b8[m
+Author: Erkan <erkan808987@gmail.com>
+Date:   Fri Jul 3 23:16:56 2020 -0400
+
+    Fixed issues. Working on matching
+
+[33mcommit 1677e64bd9637b90a8dd68a58986cfa0e93094e9[m
+Author: Erkan <erkan808987@gmail.com>
+Date:   Fri Jul 3 22:28:15 2020 -0400
+
+    Building NFA from Regex. Trying to fix inf loop in kleene star
