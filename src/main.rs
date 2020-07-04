@@ -26,25 +26,19 @@ static ALPHABET: [char; 62] = [
 
 
 macro_rules! c{
-    // `()` indicates that the macro takes no argument.
     ($z:expr) => {
-        // The macro will expand into the contents of this block.
         NFA::c($z)
     };
 }
 
 macro_rules! or{
-    // `()` indicates that the macro takes no argument.
     ($x:expr,$z:expr) => {
-        // The macro will expand into the contents of this block.
         NFA::or($x,$z)
     };
 }
 
-macro_rules! seq{
-    // `()` indicates that the macro takes no argument.
+macro_rules! s{
     ($x:expr,$z:expr) => {
-        // The macro will expand into the contents of this block.
         NFA::seq($x,$z)
     };
 }
@@ -117,6 +111,10 @@ impl State{
    
     fn set_final(&mut self,final_state:bool){
         self.is_final = final_state;
+    }
+
+    fn get_final_states(&self) -> Vec<&HashedState>{
+        self.empty_transitions.iter().chain(self.char_transitions.values().flatten()).filter(|&x|x.0.borrow().is_final == true).collect()
     }
 }
 
@@ -231,11 +229,13 @@ impl Display for DFA{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut z = write!(f,"");
         for (x,y) in self.table.iter(){
-            for q in y.iter(){
-                let p = q.0.borrow();
-                let p:Vec<HashedState> = p.empty_transitions.iter().cloned().filter(|x|x.0.borrow().is_final==true).collect();
-                z = write!(f, "(State:{}, Input: {}) --> (State: {:?})\n", x.0, x.1,p.last());
+            z = write!(f, "(State:{}, Input: {}) --> ",x.0, x.1);
+            for state in y.iter(){
+                for finals in state.0.borrow().get_final_states(){
+                    z = write!(f, "(Final State: {})",finals);
+                }
             }
+            z = write!(f,"\n");
         }
         z
     }
@@ -256,7 +256,12 @@ impl DFA{
 
                     let t = NFA::empty_string_closure(&x,ch);
 
+                    if t.len() == 0{
+                        continue;
+                    }
+
                     table.insert((x, *ch),t.clone());
+
                     for state in t{
                         if !work_list.contains(&state){
                             work_list.push(state);
@@ -274,9 +279,8 @@ impl DFA{
 fn main() {
 
     //p(aaa|bbb|ccc)(aaa|bbb|ccc)z
-    let nfa1 = or!(seq!(seq!(c!('a'),c!('a')),c!('a')),seq!(seq!(c!('b'),c!('b')),c!('b')));
-    let nfa = or!(nfa1.clone(),seq!(seq!(c!('c'),c!('c')),c!('c')));
-    let dfa = DFA::from_nfa(nfa1);
+    let nfa1 = or!(s!(s!(c!('a'),c!('a')),c!('a')),s!(s!(c!('b'),c!('b')),c!('b')));
+    let nfa = or!(c!('x'),s!(s!(c!('c'),c!('c')),c!('c')));
+    let dfa = DFA::from_nfa(nfa);
     println!("{}",dfa);
-
 }
