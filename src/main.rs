@@ -3,6 +3,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::hash::{Hash, Hasher};
 use std::clone::Clone;
+use std::fmt::Display;
 static mut state_count:u64 = 0;
 static alphabet: [char; 62] = [
     'a', 'b', 'c', 'd', 'e', 
@@ -52,6 +53,12 @@ impl Clone for HashedState{
 
     fn clone(&self) -> Self {
         Self(self.0.clone())
+    }
+}
+
+impl Display for HashedState{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.borrow().state_num)
     }
 }
 
@@ -181,6 +188,16 @@ struct DFA{
     table:HashMap<(HashedState,char),HashSet<HashedState>>
 }
 
+impl Display for DFA{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut z = write!(f,"");
+        for (x,y) in self.table.iter(){
+            z = write!(f, "(Start:{}, Input: {}, End: {:?})\n", x.0, x.1,y);
+        }
+        z
+    }
+}
+
 impl DFA{
     pub fn from_nfa(nfa:NFA) -> Self{
         let start = nfa.start;
@@ -222,5 +239,5 @@ fn main() {
     let nfa2 = NFA::character_nfa('b');
     let nfa3 = NFA::character_nfa('c');
     let dfa = DFA::from_nfa(NFA::seq_nfa(nfa1,nfa2));
-    println!("{:#?}",dfa.table);
+    println!("{}",dfa);
 }
