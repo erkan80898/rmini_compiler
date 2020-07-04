@@ -2,8 +2,27 @@ use std::collections::{HashMap,HashSet};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::hash::{Hash, Hasher};
-
+use std::clone::Clone;
 static mut state_count:u64 = 0;
+static alphabet: [char; 62] = [
+    'a', 'b', 'c', 'd', 'e', 
+    'f', 'g', 'h', 'i', 'j', 
+    'k', 'l', 'm', 'n', 'o',
+    'p', 'q', 'r', 's', 't', 
+    'u', 'v', 'w', 'x', 'y', 
+    'z',
+
+    'A', 'B', 'C', 'D', 'E', 
+    'F', 'G', 'H', 'I', 'J', 
+    'K', 'L', 'M', 'N', 'O',
+    'P', 'Q', 'R', 'S', 'T', 
+    'U', 'V', 'W', 'X', 'Y', 
+    'Z',
+
+    '0', '1', '2', '3', '4', 
+    '5', '6', '7', '8', '9', 
+];
+
 
 #[derive(Debug)]
 struct State{
@@ -12,7 +31,7 @@ struct State{
     char_transitions:HashMap<char,HashSet<HashedState>>,
     empty_transitions:HashSet<HashedState>
 }
-#[derive(Debug,Clone)]
+#[derive(Debug)]
 struct HashedState(Rc<RefCell<State>>);
 
 impl Hash for HashedState{
@@ -29,6 +48,12 @@ impl PartialEq for HashedState{
 
 impl Eq for HashedState{}
 
+impl Clone for HashedState{
+
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
 impl State{
     fn new() -> Self{
@@ -142,10 +167,10 @@ impl NFA{
         }
     }
 
-    fn empty_string_closure(set:HashSet<State>) -> HashSet<HashedState>{
+    fn empty_string_closure(set:&HashSet<HashedState>) -> HashSet<HashedState>{
         let mut result = HashSet::new();
         for item in set{
-            result.extend(item.empty_transitions);
+            result.extend(item.0.borrow().empty_transitions.clone());
         }
         result
     }
@@ -153,12 +178,42 @@ impl NFA{
 }
 
 struct DFA{
-    start:Rc<RefCell<State>>,
-    exit:Rc<RefCell<State>>
+    table:HashMap<(HashedState,char),HashSet<HashedState>>
 }
 
 impl DFA{
-    
+    pub fn from_nfa(nfa:NFA) -> Self{
+        let start = nfa.start;
+        let mut Q = HashSet::new();
+        let mut work_list = vec![start.clone()];
+        let mut table = HashMap::new();
+        Q.insert(start);
+
+        while !work_list.is_empty(){
+            let current = work_list.pop().unwrap();
+                for ch in alphabet.iter(){
+                    let x = current.clone();
+
+                    let t;
+                    if let Some(val) = x.0.borrow().char_transitions.get(ch){
+                        t = NFA::empty_string_closure(val);
+                        table.insert((current.clone(),*ch),t.clone());
+                    }else{
+                        continue;
+                    }
+
+                    for state in t{
+                        if !work_list.contains(&state){
+                            work_list.push(state);
+                        }
+                    }
+                }
+        }
+
+        Self{
+            table,
+        }
+    }
 }
 
 fn main() {
@@ -166,6 +221,6 @@ fn main() {
     let nfa1 = NFA::character_nfa('a');
     let nfa2 = NFA::character_nfa('b');
     let nfa3 = NFA::character_nfa('c');
-    let nfa4 = NFA::seq_nfa(NFA::or_nfa(NFA::character_nfa('a'),NFA::character_nfa('b')),NFA::seq_nfa(nfa1, NFA::seq_nfa(nfa2, nfa3)));
-    println!("{:#?}",nfa4);
+    let dfa = DFA::from_nfa(NFA::seq_nfa(nfa1,nfa2));
+    println!("{:#?}",dfa.table);
 }
