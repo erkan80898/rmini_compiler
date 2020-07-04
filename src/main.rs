@@ -4,8 +4,8 @@ use std::cell::RefCell;
 use std::hash::{Hash, Hasher};
 use std::clone::Clone;
 use std::fmt::Display;
-static mut state_count:u64 = 0;
-static alphabet: [char; 62] = [
+static mut STATE_COUNT:u64 = 0;
+static ALPHABET: [char; 62] = [
     'a', 'b', 'c', 'd', 'e', 
     'f', 'g', 'h', 'i', 'j', 
     'k', 'l', 'm', 'n', 'o',
@@ -23,6 +23,31 @@ static alphabet: [char; 62] = [
     '0', '1', '2', '3', '4', 
     '5', '6', '7', '8', '9', 
 ];
+
+
+macro_rules! c{
+    // `()` indicates that the macro takes no argument.
+    ($z:expr) => {
+        // The macro will expand into the contents of this block.
+        NFA::c($z)
+    };
+}
+
+macro_rules! or{
+    // `()` indicates that the macro takes no argument.
+    ($x:expr,$z:expr) => {
+        // The macro will expand into the contents of this block.
+        NFA::or($x,$z)
+    };
+}
+
+macro_rules! seq{
+    // `()` indicates that the macro takes no argument.
+    ($x:expr,$z:expr) => {
+        // The macro will expand into the contents of this block.
+        NFA::seq($x,$z)
+    };
+}
 
 
 #[derive(Debug)]
@@ -43,7 +68,7 @@ impl Hash for HashedState{
 
 impl PartialEq for HashedState{
     fn eq(&self, other: &HashedState) -> bool {
-        self.0.borrow().state_num == self.0.borrow().state_num
+        self.0.borrow().state_num == other.0.borrow().state_num
     }
 }
 
@@ -64,10 +89,10 @@ impl Display for HashedState{
 
 impl State{
     fn new() -> Self{
-        unsafe{state_count += 1};
+        unsafe{STATE_COUNT += 1};
         Self{
             is_final:false,
-            state_num:unsafe{state_count},
+            state_num:unsafe{STATE_COUNT},
             char_transitions:HashMap::new(),
             empty_transitions:HashSet::new()
         }
@@ -95,7 +120,7 @@ impl State{
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 struct NFA{
     start:HashedState,
     exit:HashedState
@@ -110,37 +135,38 @@ impl NFA{
         }
     }
 
-    pub fn character_nfa(c: char) -> Self{
-        let mut exit = State::new();
-        let mut start = State::new();
-        exit.set_final(true);
-        let exit = HashedState(Rc::new(RefCell::new(exit)));
-        start.connect(c, exit.clone());
-
-        let start = HashedState(Rc::new(RefCell::new(start)));
-        Self{
-            exit,
-            start
-        }
-    }
-
-    pub fn empty_nfa() -> Self{
-        let mut exit = State::new();
-        let mut start = State::new();
-        exit.set_final(true);
-        let exit = HashedState(Rc::new(RefCell::new(exit)));
-        start.connect_empty(exit.clone());
-        let start = HashedState(Rc::new(RefCell::new(start)));
-
-        Self{
-            exit,
-            start
-        }
-    }
-
-    pub fn or_nfa(choice1: NFA, choice2: NFA) -> Self{
+    pub fn c(c: char) -> Self{
         let start = HashedState(Rc::new(RefCell::new(State::new())));
         let exit = HashedState(Rc::new(RefCell::new(State::new())));
+        exit.0.borrow_mut().set_final(true);
+        start.0.borrow_mut().connect(c, exit.clone());
+
+        Self{
+            exit,
+            start
+        }
+    }
+
+    pub fn e() -> Self{
+        let start = HashedState(Rc::new(RefCell::new(State::new())));
+        let exit = HashedState(Rc::new(RefCell::new(State::new())));
+        exit.0.borrow_mut().set_final(true);
+        start.0.borrow_mut().connect_empty(exit.clone());
+        exit.0.borrow_mut().connect_empty(start.clone());
+        Self{
+            exit,
+            start
+        }
+    }
+
+    pub fn or(choice1: NFA,choice2: NFA) -> Self{
+        let start = HashedState(Rc::new(RefCell::new(State::new())));
+        let exit = HashedState(Rc::new(RefCell::new(State::new())));
+        exit.0.borrow_mut().set_final(true);
+
+        choice1.exit.0.borrow_mut().set_final(false);
+        choice2.exit.0.borrow_mut().set_final(false);
+
         start.0.borrow_mut().connect_empty(choice1.start);
         start.0.borrow_mut().connect_empty(choice2.start);
 
@@ -153,7 +179,7 @@ impl NFA{
         }
     }
 
-    pub fn rep_nfa(nfa:NFA) -> Self{
+    pub fn star(nfa:NFA) -> Self{
         let start = nfa.start;
         let exit = nfa.exit;
         start.0.borrow_mut().connect_empty(exit.clone());
@@ -164,22 +190,35 @@ impl NFA{
         }
     }
 
-    pub fn seq_nfa(part1:NFA, part2:NFA) -> Self{
+    pub fn seq(mut part1:NFA,mut part2:NFA) -> Self{
+        
+        part1.exit.0.borrow_mut().set_final(false);
         part2.exit.0.borrow_mut().set_final(true);
         part1.exit.0.borrow_mut().connect_empty(part2.start);
-        part1.exit.0.borrow_mut().set_final(false);
+
         Self{
             start:part1.start,
             exit:part2.exit
         }
     }
 
-    fn empty_string_closure(set:&HashSet<HashedState>) -> HashSet<HashedState>{
-        let mut result = HashSet::new();
-        for item in set{
-            result.extend(item.0.borrow().empty_transitions.clone());
+    fn empty_string_closure(state: &HashedState,ch:&char) -> HashSet<HashedState>{
+        let mut result:HashSet<HashedState> = state.0
+        .borrow()
+        .empty_transitions
+        .clone();
+        
+        result.insert(state.clone());
+
+        let mut answer = HashSet::new();
+
+        for state_i in result{
+            if let Some(val) = state_i.0.borrow().char_transitions.get(ch){
+                answer.extend::<HashSet<HashedState>>(val.into_iter().cloned().collect());
+            }
         }
-        result
+
+        answer
     }
 
 }
@@ -192,7 +231,11 @@ impl Display for DFA{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut z = write!(f,"");
         for (x,y) in self.table.iter(){
-            z = write!(f, "(Start:{}, Input: {}, End: {:?})\n", x.0, x.1,y);
+            for q in y.iter(){
+                let p = q.0.borrow();
+                let p:Vec<HashedState> = p.empty_transitions.iter().cloned().filter(|x|x.0.borrow().is_final==true).collect();
+                z = write!(f, "(State:{}, Input: {}) --> (State: {:?})\n", x.0, x.1,p.last());
+            }
         }
         z
     }
@@ -208,17 +251,12 @@ impl DFA{
 
         while !work_list.is_empty(){
             let current = work_list.pop().unwrap();
-                for ch in alphabet.iter(){
+                for ch in ALPHABET.iter(){
                     let x = current.clone();
 
-                    let t;
-                    if let Some(val) = x.0.borrow().char_transitions.get(ch){
-                        t = NFA::empty_string_closure(val);
-                        table.insert((current.clone(),*ch),t.clone());
-                    }else{
-                        continue;
-                    }
+                    let t = NFA::empty_string_closure(&x,ch);
 
+                    table.insert((x, *ch),t.clone());
                     for state in t{
                         if !work_list.contains(&state){
                             work_list.push(state);
@@ -235,9 +273,10 @@ impl DFA{
 
 fn main() {
 
-    let nfa1 = NFA::character_nfa('a');
-    let nfa2 = NFA::character_nfa('b');
-    let nfa3 = NFA::character_nfa('c');
-    let dfa = DFA::from_nfa(NFA::seq_nfa(nfa1,nfa2));
+    //p(aaa|bbb|ccc)(aaa|bbb|ccc)z
+    let nfa1 = or!(seq!(seq!(c!('a'),c!('a')),c!('a')),seq!(seq!(c!('b'),c!('b')),c!('b')));
+    let nfa = or!(nfa1.clone(),seq!(seq!(c!('c'),c!('c')),c!('c')));
+    let dfa = DFA::from_nfa(nfa1);
     println!("{}",dfa);
+
 }
