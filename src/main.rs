@@ -4,7 +4,8 @@ use std::cell::RefCell;
 use std::hash::{Hash, Hasher};
 use std::clone::Clone;
 use std::fmt::Display;
-static mut STATE_COUNT:u64 = 0;
+
+static mut STATE_COUNT:u32 = 0;
 static ALPHABET: [char; 62] = [
     'a', 'b', 'c', 'd', 'e', 
     'f', 'g', 'h', 'i', 'j', 
@@ -43,12 +44,6 @@ macro_rules! s{
     };
 }
 
-macro_rules! e{
-    () => {
-        NFA::e()
-    };
-}
-
 macro_rules! dfa{
     ($x:expr) => {
         DFA::from_nfa($x)
@@ -58,7 +53,7 @@ macro_rules! dfa{
 #[derive(Debug)]
 struct State{
     is_final:bool,
-    state_num:u64,
+    state_num:u32,
     char_transitions:HashMap<char,HashSet<HashedState>>,
     empty_transitions:HashSet<HashedState>
 }
@@ -81,7 +76,6 @@ impl PartialEq for HashedState{
 impl Eq for HashedState{}
 
 impl Clone for HashedState{
-
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
@@ -90,14 +84,6 @@ impl Clone for HashedState{
 impl Display for HashedState{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.borrow().state_num)
-    }
-}
-
-impl Drop for HashedState{
-    fn drop(&mut self) {
-        unsafe {
-            STATE_COUNT = 0;
-        }
     }
 }
 
@@ -160,6 +146,7 @@ struct NFA{
 
 impl NFA{
 
+    #[allow(dead_code)]
     fn new(start:State, exit:State) -> Self{
         Self{
             start:HashedState(Rc::new(RefCell::new(start))),
@@ -179,6 +166,7 @@ impl NFA{
         }
     }
 
+    #[allow(dead_code)]
     pub fn e() -> Self{
         let start = HashedState(Rc::new(RefCell::new(State::new())));
         let exit = HashedState(Rc::new(RefCell::new(State::new())));
@@ -211,6 +199,7 @@ impl NFA{
         }
     }
 
+    #[allow(dead_code)]
     pub fn star(nfa:NFA) -> Self{
         let start = nfa.start;
         let exit = nfa.exit;
@@ -310,14 +299,7 @@ impl DFA{
 
 fn main() {
 
-    //p(aaa|bbb|ccc)(aaa|bbb|ccc)z
-
-    let nfa1 = or!(c!('a'),c!('b'));
-    //println!("{}",nfa1);
-    //println!("{}",dfa!(or!(c!('a'),c!('b'))));
-
-    let nfa2 = s!(or!(c!('a'),c!('b')),c!('z'));
-    println!("{}",dfa!(nfa2));
-//    println!("{}",dfa!(s!(or!(c!('a'),c!('b')),c!('z'))));
+    let dfa = dfa!(s!(or!(c!('a'),c!('b')),c!('z')));
+    println!("{}",dfa);
 
 }
