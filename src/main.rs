@@ -138,11 +138,11 @@ struct NFA{
     exit:HashedState
 }
 
-/*impl Display for NFA{
+impl Display for NFA{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "START: ({}) -> EXIT: ({})", self.start,self.exit)
     }
-}*/
+}
 
 impl NFA{
 
