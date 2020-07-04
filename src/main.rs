@@ -40,17 +40,11 @@ impl NFA_state{
     }
 
     fn connect_empty(&mut self,exit: Rc<RefCell<NFA_state>>){
-        let inner = exit.borrow();
-        for state in self.empty_transitions.iter(){
-            if state.borrow().eq(&inner){
-                return
-            }
-        }
         self.empty_transitions.push(exit.clone());
     }
    
-    fn finalize(&mut self){
-        self.is_final = true;
+    fn set_final(&mut self,final_state:bool){
+        self.is_final = final_state;
     }
 }
 
@@ -72,7 +66,7 @@ impl NFA{
     fn character_nfa(c: char) -> Self{
         let mut exit = NFA_state::new();
         let mut start = NFA_state::new();
-        exit.finalize();
+        exit.set_final(true);
         let exit = Rc::new(RefCell::new(exit));
         start.connect(c, exit.clone());
 
@@ -86,7 +80,7 @@ impl NFA{
     fn empty_nfa() -> Self{
         let mut exit = NFA_state::new();
         let mut start = NFA_state::new();
-        exit.finalize();
+        exit.set_final(true);
         let exit = Rc::new(RefCell::new(exit));
         start.connect_empty(exit.clone());
         let start = Rc::new(RefCell::new(start));
@@ -124,8 +118,9 @@ impl NFA{
     }
 
     fn seq_nfa(part1:NFA, part2:NFA) -> Self{
-        part2.exit.borrow_mut().finalize();
+        part2.exit.borrow_mut().set_final(true);
         part1.exit.borrow_mut().connect_empty(part2.start.clone());
+        part1.exit.borrow_mut().set_final(false);
         Self{
             start:part1.start,
             exit:part2.exit
@@ -136,6 +131,9 @@ impl NFA{
 
 fn main() {
 
-    let nfa = NFA::character_nfa('c');
-    println!("{:#?}",NFA::rep_nfa(nfa));
+    let nfa1 = NFA::character_nfa('a');
+    let nfa2 = NFA::character_nfa('b');
+    let nfa3 = NFA::character_nfa('c');
+    let nfa4 = NFA::seq_nfa(nfa1, NFA::seq_nfa(nfa2, nfa3));
+    println!("{:#?}",nfa4);
 }
