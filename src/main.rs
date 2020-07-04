@@ -114,7 +114,14 @@ impl State{
     }
 
     fn get_final_states(&self) -> Vec<&HashedState>{
-        self.empty_transitions.iter().chain(self.char_transitions.values().flatten()).filter(|&x|x.0.borrow().is_final == true).collect()
+        if self.empty_transitions.len() + self.char_transitions.len() == 0{
+            return vec![]
+        }
+
+        self.empty_transitions.iter()
+        .chain(self.char_transitions.values().flatten())
+        .filter(|&x|x.0.borrow().is_final == true)
+        .collect()
     }
 }
 
@@ -188,7 +195,7 @@ impl NFA{
         }
     }
 
-    pub fn seq(mut part1:NFA,mut part2:NFA) -> Self{
+    pub fn seq(part1:NFA,part2:NFA) -> Self{
         
         part1.exit.0.borrow_mut().set_final(false);
         part2.exit.0.borrow_mut().set_final(true);
@@ -280,7 +287,8 @@ fn main() {
 
     //p(aaa|bbb|ccc)(aaa|bbb|ccc)z
     let nfa1 = or!(s!(s!(c!('a'),c!('a')),c!('a')),s!(s!(c!('b'),c!('b')),c!('b')));
-    let nfa = or!(c!('x'),s!(s!(c!('c'),c!('c')),c!('c')));
-    let dfa = DFA::from_nfa(nfa);
+    let nfa2 = or!(c!('y'),s!(s!(c!('c'),c!('c')),c!('c')));
+    let dfa = DFA::from_nfa(s!(nfa1,nfa2));
     println!("{}",dfa);
+
 }
