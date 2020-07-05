@@ -105,19 +105,6 @@ impl State {
     fn set_final(&mut self, final_state: bool) {
         self.is_final = final_state;
     }
-
-    fn get_final_states(&self) -> Vec<HashedState> {
-        if self.empty_transitions.len() + self.char_transitions.len() == 0 {
-            return vec![];
-        }
-
-        self.empty_transitions
-            .iter()
-            .chain(self.char_transitions.values().flatten())
-            .filter(|&x| x.0.borrow().is_final == true)
-            .cloned()
-            .collect()
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -219,22 +206,6 @@ struct DFA {
     table: HashMap<(HashedState, char), HashSet<HashedState>>,
 }
 
-impl Display for DFA {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut z = write!(f, "");
-        for (x, y) in self.table.iter() {
-            z = write!(
-                f,
-                "(State: {}, Input: {}) --> (Exit: {:#?})\n\n\n",
-                x.0,
-                x.1,
-                y.iter().map(|x| x.0.borrow().get_final_states())
-            );
-        }
-        z
-    }
-}
-
 impl DFA {
     pub fn from_nfa(nfa: NFA) -> Self {
         let mut start = HashSet::new();
@@ -285,10 +256,9 @@ impl DFA {
 fn main() {
     let nfa1 = c!('a');
     let nfa2 = c!('b');
-    let nfa3 = or!(nfa1, nfa2);
-    let nfa4 = c!('z');
-    let nfa5 = or!(nfa3, nfa4);
-    let dfa = dfa!(nfa5);
+    let nfa3 = c!('z');
+    let nfa4 = c!('s');
+    let nfa5 = or!(or!(s!(nfa1.clone(),nfa2), s!(nfa1,nfa3)),nfa4);
 
-    println!("{}", dfa);
+    println!("{:#?}", dfa!(nfa5).table);
 }
