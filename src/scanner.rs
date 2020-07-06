@@ -46,7 +46,7 @@ pub fn scan(file_name: String) -> Result<Vec<Token>, Error> {
     let mut j = 0;
     ln_num += 1;
     let file_bound = s.len() - 1;
-    while i < file_bound - 1 {
+    while i < file_bound {
         current = &s[i];
         j = i + 1;
         peek = s[j];
@@ -55,7 +55,6 @@ pub fn scan(file_name: String) -> Result<Vec<Token>, Error> {
             continue;
         }
 
-        //match symbols
         match current {
             '+' => {
                 token_list.push(Token::ADD);
@@ -166,7 +165,6 @@ pub fn scan(file_name: String) -> Result<Vec<Token>, Error> {
             }
 
             _ => {
-                //Numbers
                 if current.is_digit(10) {
                     let mut float = false;
                     while peek.is_digit(10) || (peek == '.' && float == false) {
@@ -176,7 +174,7 @@ pub fn scan(file_name: String) -> Result<Vec<Token>, Error> {
                         j += 1;
                         peek = s[j];
                     }
-                    if peek != ' ' && peek != ';' && peek != '{' && j != s.len() - 1 {
+                    if peek != ' ' && peek != ';' && peek != '{' && j != file_bound {
                         return Err(std::io::Error::new(
                             ErrorKind::InvalidInput,
                             format!("INVALID TOKEN AT: Ln {}, Col {}", ln_num, j),
@@ -193,101 +191,21 @@ pub fn scan(file_name: String) -> Result<Vec<Token>, Error> {
 
                     i = j;
                 } else if current.is_alphabetic() || current == &'_' {
-                    if current == &'i' && peek == 'f' {
-                        j += 1;
-                        if j < s.len() - 1 {
-                            peek = s[j];
-                            if !peek.is_alphanumeric() {
-                                token_list.push(Token::IF);
-                                i = j;
-                                continue;
-                            }
-                        } else {
-                            i = j;
-                            token_list.push(Token::IF);
-                            continue;
-                        }
-                    } else if current == &'e' && peek == 'l' {
-                        j += 1;
-                        if j < file_bound {
-                            peek = s[j];
-                            if peek == 's' {
-                                j += 1;
-                                if j < file_bound {
-                                    peek = s[j];
-                                    if peek == 'e' {
-                                        j += 1;
-                                        if j < file_bound {
-                                            peek = s[j];
-                                            if !peek.is_alphanumeric() {
-                                                token_list.push(Token::ELSE);
-                                                i = j;
-                                                continue;
-                                            }
-                                        } else {
-                                            token_list.push(Token::ELSE);
-                                        }
-                                    }
-                                } else {
-                                    i = j;
-                                    token_list.push(Token::IDENT(String::from("els")));
-                                    continue;
-                                }
-                            }
-                        }
-                    } else if current == &'w' && peek == 'h' {
-                        j += 1;
-                        if j < file_bound {
-                            peek = s[j];
-                            if peek == 'i' {
-                                j += 1;
-                                if j < file_bound {
-                                    peek = s[j];
-                                    if peek == 'l' {
-                                        j += 1;
-                                        if j < file_bound {
-                                            peek = s[j];
-                                            if peek == 'e' {
-                                                j += 1;
-                                                if j < file_bound {
-                                                    peek = s[j];
-                                                    if !peek.is_alphanumeric() {
-                                                        token_list.push(Token::WHILE);
-                                                        i = j;
-                                                        continue;
-                                                    }
-                                                } else {
-                                                    token_list.push(Token::WHILE);
-                                                    continue;
-                                                }
-                                            }
-                                        } else {
-                                            i = j;
-                                            token_list.push(Token::IDENT(String::from("whil")));
-                                            continue;
-                                        }
-                                    }
-                                } else {
-                                    i = j;
-                                    token_list.push(Token::IDENT(String::from("whi")));
-                                    continue;
-                                }
-                            }
-                        } else {
-                            i = j;
-                            token_list.push(Token::IDENT(String::from("wh")));
-                            continue;
-                        }
-                    }
-
                     while peek.is_alphanumeric() && j != file_bound {
                         j += 1;
                         peek = s[j];
                     }
+                    let word = &s[i..j];
 
-                    let word = s[i..j].iter().collect::<String>();
-
-                    token_list.push(Token::IDENT(word));
+                    if word == ['w', 'h', 'i', 'l', 'e'] {
+                        token_list.push(Token::WHILE);
+                    } else if word == ['i', 'f'] {
+                        token_list.push(Token::IF);
+                    } else if word == ['e', 'l', 's', 'e'] {
+                        token_list.push(Token::ELSE)
+                    } else {
+                        token_list.push(Token::IDENT(word.iter().collect()));
+                    }
                     i = j;
                 } else {
                     return Err(std::io::Error::new(

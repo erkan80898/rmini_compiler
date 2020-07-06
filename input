@@ -4,9 +4,3 @@ num = 1.6000;
 while num != 1.6242{
     num = num + 0.0001;
 }
-
-if num != 1.6242{
-    print("NO");
-}else{
-    print(mystr);
-}
