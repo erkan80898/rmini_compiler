@@ -1,0 +1,3 @@
+mystr = "hello world"; sum = 1.6242;
+print(mystr);
+;;;
