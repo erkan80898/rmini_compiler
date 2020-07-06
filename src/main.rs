@@ -144,12 +144,9 @@ fn scanner(file_name: String) -> Result<Vec<Token>, String> {
                     if j - i == 1 {
                         token_list.push(Token::STR(String::new()));
                     } else {
+                        let word = s[i..j].iter().collect::<String>();
                         token_list.push(Token::STR(
-                            s.iter()
-                                .enumerate()
-                                .filter(|(k, _)| k > &i && k < &j)
-                                .map(|(_, ch)| ch)
-                                .collect::<String>(),
+                           word
                         ));
                     }
                     i = j + 1;
@@ -195,27 +192,18 @@ fn scanner(file_name: String) -> Result<Vec<Token>, String> {
                             return Err(format!("INVALID TOKEN AT: Ln {}, Col {}", ln_num, j));
                         }
 
+                        let num = s[i..j].iter().collect::<String>();
+
                         if float {
                             token_list.push(Token::FLOAT(
-                                s.iter()
-                                    .enumerate()
-                                    .filter(|(k, _)| k >= &i && k < &j)
-                                    .map(|(_, val)| val)
-                                    .collect::<String>()
-                                    .parse::<f32>()
-                                    .unwrap(),
+                                num.parse::<f32>().unwrap(),
                             ));
                         } else {
                             token_list.push(Token::INT(
-                                s.iter()
-                                    .enumerate()
-                                    .filter(|(k, _)| k >= &i && k < &j)
-                                    .map(|(_, val)| val)
-                                    .collect::<String>()
-                                    .parse::<i32>()
-                                    .unwrap(),
+                                num.parse::<i32>().unwrap(),
                             ));
                         }
+
                         i = j;
                     } else if current.is_alphabetic() {
                         if current == 'i' {
@@ -227,12 +215,11 @@ fn scanner(file_name: String) -> Result<Vec<Token>, String> {
                                 j += 1;
                                 peek = s[j];
                             }
+
+                            let word  = s[i..j].iter().collect::<String>();
+
                             token_list.push(Token::IDENT(
-                                s.iter()
-                                    .enumerate()
-                                    .filter(|(k, _)| k >= &i && k < &j)
-                                    .map(|(_, val)| val)
-                                    .collect::<String>(),
+                                word,
                             ));
                             i = j;
                         }
@@ -253,7 +240,7 @@ fn scanner(file_name: String) -> Result<Vec<Token>, String> {
 fn main() {
     let tokens = scanner(String::from("input"));
     match tokens {
-        Ok(x) => println!("{:#?}", x),
+        Ok(x) => {},
         Err(err) => println!("{}", err),
     }
 }
