@@ -10,6 +10,7 @@ pub enum Token {
     LBRACE,
     RBRACE,
     SEMI,
+    RETURNSIG,
     RETURN,
     ADD,
     SUB,
@@ -24,6 +25,7 @@ pub enum Token {
     LEQ,
     GREATER,
     GEQ,
+    LET,
     IDENT(String),
     STR(String),
     INT(i32),
@@ -63,7 +65,7 @@ pub fn scan(file_name: String) -> Result<Vec<Token>, Error> {
 
             '-' => {
                 if peek == '>' {
-                    token_list.push(Token::RETURN);
+                    token_list.push(Token::RETURNSIG);
                     i += 2;
                 } else {
                     token_list.push(Token::SUB);
@@ -203,6 +205,10 @@ pub fn scan(file_name: String) -> Result<Vec<Token>, Error> {
                         token_list.push(Token::IF);
                     } else if word == ['e', 'l', 's', 'e'] {
                         token_list.push(Token::ELSE)
+                    } else if word == ['r', 'e', 't', 'u', 'r', 'n'] {
+                        token_list.push(Token::RETURN)
+                    } else if word == ['l', 'e', 't'] {
+                        token_list.push(Token::LET);
                     } else {
                         token_list.push(Token::IDENT(word.iter().collect()));
                     }
