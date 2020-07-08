@@ -1,6 +1,8 @@
-mod scanner;
+mod lexer;
+mod parser;
+
 fn main() {
-    let tokens = scanner::scan(String::from("input"));
+    let tokens = lexer::Lexer::scan(String::from("input"));
     match tokens {
         Ok(x) => println!("{:#?}", x),
         Err(err) => println!("{}", err),

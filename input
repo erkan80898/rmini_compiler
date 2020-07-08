@@ -1,6 +1,9 @@
 let _mystr = "num equals 1.6242";
-let num = 1.6000;
+let num = -1.6000;
 
 while num != 1.6242{
-    set num = num + 0.0001;
+    num = num - 0.0001;
 }
+
+
+z = 2;
