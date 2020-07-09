@@ -13,7 +13,6 @@ pub enum Token {
     RBRACE,
     LCBRACE,
     RCBRACE,
-    RETURN,
     ADD,
     SUB,
     MUL,
@@ -27,6 +26,7 @@ pub enum Token {
     LEQ,
     GREATER,
     GEQ,
+    VOID,
     IDENT(String),
     STR(String),
     INT(i32),
@@ -228,10 +228,10 @@ impl Lexer {
                             token_list.push_back(Token::IF);
                         } else if word == ['e', 'l', 's', 'e'] {
                             token_list.push_back(Token::ELSE)
-                        } else if word == ['r', 'e', 't', 'u', 'r', 'n'] {
-                            token_list.push_back(Token::RETURN)
                         } else if word == ['f', 'n'] {
                             token_list.push_back(Token::FN);
+                        } else if word == ['v', 'o', 'i', 'd'] {
+                            token_list.push_back(Token::VOID);
                         } else {
                             token_list.push_back(Token::IDENT(word.iter().collect()));
                         }

@@ -1,2 +1,2 @@
 
-fn x(y){ 2**y ; y==2**y }
+fn x(y){ y ; y==2**y ;void}

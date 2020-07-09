@@ -45,6 +45,7 @@ impl Parser {
                     || matches!(token, Token::FLOAT(_))
                     || matches!(token, Token::IDENT(_))
                     || matches!(token, Token::STR(_))
+                    || matches!(token, Token::VOID)
                     || matches!(token, Token::LBRACE)
                     || matches!(token, Token::LCBRACE)
                 {
@@ -54,6 +55,7 @@ impl Parser {
                     || matches!(token, Token::EXP)
                     || matches!(token, Token::NOT)
                     || matches!(token, Token::FN)
+                    || matches!(token, Token::IF)
                 {
                     let right_bp = Parser::prefix_binding_power(&token);
                     let rhs;
@@ -158,6 +160,7 @@ impl Parser {
 
     fn prefix_binding_power(token: &Token) -> u8 {
         match token {
+            Token::IF => 0,
             Token::ADD => 9,
             Token::SUB => 9,
             Token::EXP => 9,
