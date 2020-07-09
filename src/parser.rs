@@ -41,58 +41,61 @@ impl Parser {
     fn parse_rec(&mut self, min_bp: u8) -> SExpr {
         let mut lhs = match self.lexer.next() {
             token => {
-                if matches!(token, Token::INT(_)) || matches!(token, Token::FLOAT(_)) {
-                    SExpr::Atom(token)
-                } else if matches!(token, Token::ADD)
+                if matches!(token, Token::ADD)
                     || matches!(token, Token::SUB)
                     || matches!(token, Token::EXP)
                 {
                     let right_bp = Parser::prefix_binding_power(&token);
                     let rhs = self.parse_rec(right_bp);
                     SExpr::Cons(token, vec![rhs])
+                } else if matches!(token, Token::LPAREN) {
+                    let sub = self.parse_rec(0);
+                    assert!(matches!(self.lexer.next(), Token::RPAREN));
+                    sub
                 } else {
-                    panic!("BAD TOKEN: {:?}", token);
+                    SExpr::Atom(token)
                 }
-            }
-            _ => {
-                panic!("NO TOKEN");
             }
         };
 
         loop {
-            let op = match self.lexer.peek() {
-                Token::ADD => Token::ADD,
-                Token::SUB => Token::SUB,
-                Token::MUL => Token::MUL,
-                Token::DIV => Token::DIV,
-                Token::EXP => Token::EXP,
-                Token::EOF => break,
-                _ => panic!("GIVEN A WRONG TOKEN FOR INFIX: {:?}", self.lexer.pos()),
-            };
+            let op = self.lexer.peek().clone();
 
-            let (left_bp, right_bp) = Parser::infix_binding_power(&op);
-
-            if left_bp < min_bp {
-                break;
+            if let Some(left_bp) = Parser::postfix_binding_power(&op) {
+                let rhs = self.parse_rec(left_bp);
+                SExpr::Cons(op, vec![rhs]);
+                continue;
             }
 
-            self.lexer.next();
-            let rhs = self.parse_rec(right_bp);
+            if let Some((left_bp, right_bp)) = Parser::infix_binding_power(&op) {
+                if left_bp < min_bp {
+                    break;
+                }
 
-            lhs = SExpr::Cons(op, vec![lhs, rhs]);
+                self.lexer.next();
+                let rhs = self.parse_rec(right_bp);
+
+                lhs = SExpr::Cons(op, vec![lhs, rhs]);
+                continue;
+            }
+
+            // breaks if the operator isn't defined for any positional operations
+            // ie for ), }, EOF
+            break;
         }
 
         lhs
     }
 
-    fn infix_binding_power(token: &Token) -> (u8, u8) {
+    fn infix_binding_power(token: &Token) -> Option<(u8, u8)> {
         match token {
-            Token::ADD => (1, 2),
-            Token::SUB => (1, 2),
-            Token::MUL => (3, 4),
-            Token::DIV => (3, 4),
-            Token::EXP => (5, 6),
-            _ => panic!("GIVEN A WRONG TOKEN FOR INFIX: {:?}", token),
+            Token::ADD => Some((1, 2)),
+            Token::SUB => Some((1, 2)),
+            Token::MUL => Some((3, 4)),
+            Token::DIV => Some((3, 4)),
+            Token::EXP => Some((5, 6)),
+            Token::SEMI => Some((0, 0)),
+            _ => None,
         }
     }
 
@@ -101,7 +104,13 @@ impl Parser {
             Token::ADD => 7,
             Token::SUB => 7,
             Token::EXP => 7,
-            _ => panic!("GIVEN A WRONG TOKEN FOR INFIX: {:?}", token),
+            _ => panic!("GIVEN A WRONG TOKEN FOR PREFIX: {:?}", token),
+        }
+    }
+
+    fn postfix_binding_power(token: &Token) -> Option<u8> {
+        match token {
+            _ => None,
         }
     }
 }

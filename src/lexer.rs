@@ -5,11 +5,11 @@ pub enum Token {
     IF,
     ELSE,
     WHILE,
+    SEMI,
     LPAREN,
     RPAREN,
     LBRACE,
     RBRACE,
-    SEMI,
     RETURNSIG,
     RETURN,
     ADD,
@@ -184,7 +184,7 @@ impl Lexer {
                             j += 1;
                             peek = s[j];
                         }
-                        if peek != ' ' && peek != ';' && peek != '{' && j != file_bound {
+                        if peek != ' ' && peek != ';' && peek != ')' && j != file_bound {
                             return Err(std::io::Error::new(
                                 ErrorKind::InvalidInput,
                                 format!("INVALID TOKEN AT: Ln {}, Col {}", ln_num, j),
@@ -230,7 +230,6 @@ impl Lexer {
                 }
             }
         }
-        token_list.push(Token::EOF);
         Ok(Self { token_list, pos: 0 })
     }
 
@@ -241,6 +240,9 @@ impl Lexer {
     }
 
     pub fn peek(&mut self) -> &Token {
+        if self.pos == self.token_list.len() - 1 {
+            return &Token::EOF;
+        }
         &self.token_list[self.pos]
     }
 
