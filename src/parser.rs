@@ -41,7 +41,9 @@ impl Parser {
     fn parse_rec(&mut self, min_bp: u8) -> SExpr {
         let mut lhs = match self.lexer.next() {
             Some(token) => {
-                if matches!(token, Token::ADD)
+                if matches!(token, Token::INT(_)) || matches!(token, Token::FLOAT(_)) {
+                    SExpr::Atom(token)
+                } else if matches!(token, Token::ADD)
                     || matches!(token, Token::SUB)
                     || matches!(token, Token::EXP)
                 {
@@ -53,7 +55,7 @@ impl Parser {
                     assert!(matches!(self.lexer.next(), Some(Token::RPAREN)));
                     sub
                 } else {
-                    SExpr::Atom(token)
+                    panic!("BAD TOKEN");
                 }
             }
             None => panic!("BAD TOKEN"),
@@ -81,6 +83,9 @@ impl Parser {
                 self.lexer.next();
                 let rhs = self.parse_rec(right_bp);
 
+                if matches!(op, Token::EQ) {
+                    assert!(matches!(rhs, SExpr::Atom(_)))
+                }
                 lhs = SExpr::Cons(op, vec![lhs, rhs]);
                 continue;
             }
@@ -95,11 +100,14 @@ impl Parser {
 
     fn infix_binding_power(token: &Token) -> Option<(u8, u8)> {
         match token {
-            Token::ADD => Some((1, 2)),
-            Token::SUB => Some((1, 2)),
-            Token::MUL => Some((3, 4)),
-            Token::DIV => Some((3, 4)),
-            Token::EXP => Some((5, 6)),
+            Token::ADD => Some((2, 3)),
+            Token::SUB => Some((2, 3)),
+            Token::MUL => Some((4, 5)),
+            Token::DIV => Some((4, 5)),
+            Token::EXP => Some((6, 7)),
+            Token::EQ => Some((1, 2)),
+            Token::LEQ => Some((1, 2)),
+
             Token::SEMI => Some((0, 0)),
             _ => None,
         }
