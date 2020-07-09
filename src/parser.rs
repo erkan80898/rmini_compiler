@@ -56,18 +56,17 @@ impl Parser {
                     SExpr::Atom(token)
                 }
             }
-            None =>{
-                SExpr::Atom(Token::EMPTY)
-            }
+            None => panic!("BAD TOKEN"),
         };
 
         loop {
             let op = self.lexer.peek();
 
-            if op.is_none(){
-                break
+            if op.is_none() {
+                break;
             }
             let op = op.unwrap().clone();
+
             if let Some(left_bp) = Parser::postfix_binding_power(&op) {
                 let rhs = self.parse_rec(left_bp);
                 SExpr::Cons(op, vec![rhs]);

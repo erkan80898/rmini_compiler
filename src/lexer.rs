@@ -26,7 +26,6 @@ pub enum Token {
     GREATER,
     GEQ,
     LET,
-    EMPTY,
     IDENT(String),
     STR(String),
     INT(i32),
@@ -229,7 +228,7 @@ impl Lexer {
                 }
             }
         }
-        Ok(Self { token_list})
+        Ok(Self { token_list })
     }
 
     pub fn next(&mut self) -> Option<Token> {
