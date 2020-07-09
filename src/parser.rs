@@ -79,10 +79,6 @@ impl Parser {
                 let rhs = self.parse_rec(left_bp);
                 if matches!(op, Token::LBRACE) {
                     assert!(matches!(self.lexer.next(), Some(Token::RBRACE)));
-                    assert!(
-                        matches!(rhs, SExpr::Atom(Token::INT(_))),
-                        "ERROR: Can't index array with non-integers"
-                    );
                 }
                 lhs = SExpr::Cons(op, vec![lhs, rhs]);
                 continue;
@@ -95,6 +91,18 @@ impl Parser {
 
                 self.lexer.next();
                 let rhs = self.parse_rec(right_bp);
+
+                if matches!(op, Token::ASSIGN) {
+                    assert!(
+                        matches!(lhs, SExpr::Atom(Token::IDENT(_))),
+                        "ERROR: Can't assign to non-identifiers"
+                    );
+
+                    assert!(
+                        !matches!(rhs, SExpr::Atom(Token::LBRACE)),
+                        "ERROR: Bad identifier assignment"
+                    );
+                }
 
                 lhs = SExpr::Cons(op, vec![lhs, rhs]);
                 continue;
@@ -115,6 +123,7 @@ impl Parser {
             Token::MUL => Some((4, 5)),
             Token::DIV => Some((4, 5)),
             Token::EXP => Some((6, 7)),
+            Token::ASSIGN => Some((1, 1)),
             Token::EQ => Some((1, 2)),
             Token::LEQ => Some((1, 2)),
             Token::GEQ => Some((1, 2)),
@@ -138,7 +147,7 @@ impl Parser {
 
     fn postfix_binding_power(token: &Token) -> Option<u8> {
         match token {
-            Token::LBRACE => Some(10),
+            Token::LBRACE => Some(0),
             _ => None,
         }
     }

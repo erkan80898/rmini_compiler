@@ -5,6 +5,7 @@ pub enum Token {
     IF,
     ELSE,
     WHILE,
+    FN,
     SEMI,
     LPAREN,
     RPAREN,
@@ -27,7 +28,6 @@ pub enum Token {
     LEQ,
     GREATER,
     GEQ,
-    LET,
     IDENT(String),
     STR(String),
     INT(i32),
@@ -198,6 +198,11 @@ impl Lexer {
                             && peek != ';'
                             && peek != ')'
                             && peek != ']'
+                            && peek != '\n'
+                            && peek != '+'
+                            && peek != '-'
+                            && peek != '*'
+                            && peek != '/'
                             && j != file_bound
                         {
                             return Err(std::io::Error::new(
@@ -231,8 +236,8 @@ impl Lexer {
                             token_list.push_back(Token::ELSE)
                         } else if word == ['r', 'e', 't', 'u', 'r', 'n'] {
                             token_list.push_back(Token::RETURN)
-                        } else if word == ['l', 'e', 't'] {
-                            token_list.push_back(Token::LET);
+                        } else if word == ['f', 'n'] {
+                            token_list.push_back(Token::FN);
                         } else {
                             token_list.push_back(Token::IDENT(word.iter().collect()));
                         }
