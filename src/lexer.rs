@@ -10,6 +10,8 @@ pub enum Token {
     RPAREN,
     LBRACE,
     RBRACE,
+    LCBRACE,
+    RCBRACE,
     RETURNSIG,
     RETURN,
     ADD,
@@ -157,13 +159,23 @@ impl Lexer {
                     i += 1;
                 }
 
-                '{' => {
+                '[' => {
                     token_list.push_back(Token::LBRACE);
                     i += 1;
                 }
 
-                '}' => {
+                ']' => {
                     token_list.push_back(Token::RBRACE);
+                    i += 1;
+                }
+
+                '{' => {
+                    token_list.push_back(Token::LCBRACE);
+                    i += 1;
+                }
+
+                '}' => {
+                    token_list.push_back(Token::RCBRACE);
                     i += 1;
                 }
 
@@ -182,7 +194,12 @@ impl Lexer {
                             j += 1;
                             peek = s[j];
                         }
-                        if peek != ' ' && peek != ';' && peek != ')' && j != file_bound {
+                        if peek != ' '
+                            && peek != ';'
+                            && peek != ')'
+                            && peek != ']'
+                            && j != file_bound
+                        {
                             return Err(std::io::Error::new(
                                 ErrorKind::InvalidInput,
                                 format!("INVALID TOKEN AT: Ln {}, Col {}", ln_num, j),
@@ -199,10 +216,11 @@ impl Lexer {
 
                         i = j;
                     } else if current.is_alphabetic() || current == &'_' {
-                        while peek.is_alphanumeric() && j != file_bound {
+                        while (peek.is_alphanumeric() || peek == '_') && j != file_bound {
                             j += 1;
                             peek = s[j];
                         }
+
                         let word = &s[i..j];
 
                         if word == ['w', 'h', 'i', 'l', 'e'] {

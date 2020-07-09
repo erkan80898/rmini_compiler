@@ -41,11 +41,16 @@ impl Parser {
     fn parse_rec(&mut self, min_bp: u8) -> SExpr {
         let mut lhs = match self.lexer.next() {
             Some(token) => {
-                if matches!(token, Token::INT(_)) || matches!(token, Token::FLOAT(_)) {
+                if matches!(token, Token::INT(_))
+                    || matches!(token, Token::FLOAT(_))
+                    || matches!(token, Token::IDENT(_))
+                    || matches!(token, Token::LBRACE)
+                {
                     SExpr::Atom(token)
                 } else if matches!(token, Token::ADD)
                     || matches!(token, Token::SUB)
                     || matches!(token, Token::EXP)
+                    || matches!(token, Token::NOT)
                 {
                     let right_bp = Parser::prefix_binding_power(&token);
                     let rhs = self.parse_rec(right_bp);
@@ -70,8 +75,16 @@ impl Parser {
             let op = op.unwrap().clone();
 
             if let Some(left_bp) = Parser::postfix_binding_power(&op) {
+                self.lexer.next();
                 let rhs = self.parse_rec(left_bp);
-                SExpr::Cons(op, vec![rhs]);
+                if matches!(op, Token::LBRACE) {
+                    assert!(matches!(self.lexer.next(), Some(Token::RBRACE)));
+                    assert!(
+                        matches!(rhs, SExpr::Atom(Token::INT(_))),
+                        "ERROR: Can't index array with non-integers"
+                    );
+                }
+                lhs = SExpr::Cons(op, vec![lhs, rhs]);
                 continue;
             }
 
@@ -83,9 +96,6 @@ impl Parser {
                 self.lexer.next();
                 let rhs = self.parse_rec(right_bp);
 
-                if matches!(op, Token::EQ) {
-                    assert!(matches!(rhs, SExpr::Atom(_)))
-                }
                 lhs = SExpr::Cons(op, vec![lhs, rhs]);
                 continue;
             }
@@ -107,7 +117,10 @@ impl Parser {
             Token::EXP => Some((6, 7)),
             Token::EQ => Some((1, 2)),
             Token::LEQ => Some((1, 2)),
-
+            Token::GEQ => Some((1, 2)),
+            Token::NEQ => Some((1, 2)),
+            Token::LESS => Some((1, 2)),
+            Token::GREATER => Some((1, 2)),
             Token::SEMI => Some((0, 0)),
             _ => None,
         }
@@ -115,15 +128,17 @@ impl Parser {
 
     fn prefix_binding_power(token: &Token) -> u8 {
         match token {
-            Token::ADD => 7,
-            Token::SUB => 7,
-            Token::EXP => 7,
+            Token::ADD => 9,
+            Token::SUB => 9,
+            Token::EXP => 9,
+            Token::NOT => 8,
             _ => panic!("GIVEN A WRONG TOKEN FOR PREFIX: {:?}", token),
         }
     }
 
     fn postfix_binding_power(token: &Token) -> Option<u8> {
         match token {
+            Token::LBRACE => Some(10),
             _ => None,
         }
     }
