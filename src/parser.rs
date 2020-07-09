@@ -44,22 +44,40 @@ impl Parser {
                 if matches!(token, Token::INT(_))
                     || matches!(token, Token::FLOAT(_))
                     || matches!(token, Token::IDENT(_))
+                    || matches!(token, Token::STR(_))
                     || matches!(token, Token::LBRACE)
+                    || matches!(token, Token::LCBRACE)
                 {
                     SExpr::Atom(token)
                 } else if matches!(token, Token::ADD)
                     || matches!(token, Token::SUB)
                     || matches!(token, Token::EXP)
                     || matches!(token, Token::NOT)
+                    || matches!(token, Token::FN)
                 {
                     let right_bp = Parser::prefix_binding_power(&token);
-                    let rhs = self.parse_rec(right_bp);
-                    SExpr::Cons(token, vec![rhs])
+                    let rhs;
+
+                    if matches!(token, Token::FN) {
+                        let id = self.lexer.next();
+                        assert!(matches!(id, Some(Token::IDENT(_))));
+                        assert!(matches!(self.lexer.peek(), Some(Token::LPAREN)));
+                        rhs = self.parse_rec(right_bp);
+                        return SExpr::Cons(token, vec![SExpr::Atom(id.unwrap()), rhs]);
+                    } else {
+                        rhs = self.parse_rec(right_bp);
+                        return SExpr::Cons(token, vec![rhs]);
+                    }
                 } else if matches!(token, Token::LPAREN) {
                     let sub = self.parse_rec(0);
                     assert!(matches!(self.lexer.next(), Some(Token::RPAREN)));
                     sub
+                } else if matches!(token, Token::LCBRACE) {
+                    let sub = self.parse_rec(0);
+                    assert!(matches!(self.lexer.next(), Some(Token::RCBRACE)));
+                    sub
                 } else {
+                    println!("{:?}", token);
                     panic!("BAD TOKEN");
                 }
             }
@@ -79,6 +97,9 @@ impl Parser {
                 let rhs = self.parse_rec(left_bp);
                 if matches!(op, Token::LBRACE) {
                     assert!(matches!(self.lexer.next(), Some(Token::RBRACE)));
+                } else if matches!(op, Token::LCBRACE) {
+                    println!("{:?}", rhs);
+                    assert!(matches!(self.lexer.next(), Some(Token::RCBRACE)));
                 }
                 lhs = SExpr::Cons(op, vec![lhs, rhs]);
                 continue;
@@ -141,6 +162,7 @@ impl Parser {
             Token::SUB => 9,
             Token::EXP => 9,
             Token::NOT => 8,
+            Token::FN => 10,
             _ => panic!("GIVEN A WRONG TOKEN FOR PREFIX: {:?}", token),
         }
     }
@@ -148,6 +170,7 @@ impl Parser {
     fn postfix_binding_power(token: &Token) -> Option<u8> {
         match token {
             Token::LBRACE => Some(0),
+            Token::LCBRACE => Some(0),
             _ => None,
         }
     }

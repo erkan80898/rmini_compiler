@@ -13,7 +13,6 @@ pub enum Token {
     RBRACE,
     LCBRACE,
     RCBRACE,
-    RETURNSIG,
     RETURN,
     ADD,
     SUB,
@@ -72,13 +71,8 @@ impl Lexer {
                 }
 
                 '-' => {
-                    if peek == '>' {
-                        token_list.push_back(Token::RETURNSIG);
-                        i += 2;
-                    } else {
-                        token_list.push_back(Token::SUB);
-                        i += 1;
-                    }
+                    token_list.push_back(Token::SUB);
+                    i += 1;
                 }
 
                 '*' => {
