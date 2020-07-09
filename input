@@ -1,9 +1,2 @@
-let _mystr = "num equals 1.6242";
-let num = -1.6000;
 
-while num != 1.6242{
-    num = num - 0.0001;
-}
-
-
-z = 2;
+**4 + 8.321 ** 3 - 3

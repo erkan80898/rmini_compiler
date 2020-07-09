@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Token {
     IF,
     ELSE,
@@ -235,12 +235,16 @@ impl Lexer {
     }
 
     pub fn next(&mut self) -> Token {
-        let item = self.token_list[self.pos];
+        let item = self.token_list[self.pos].clone();
         self.pos += 1;
         item
     }
 
     pub fn peek(&mut self) -> &Token {
         &self.token_list[self.pos]
+    }
+
+    pub fn pos(&self) -> usize {
+        self.pos
     }
 }
