@@ -40,7 +40,7 @@ impl Parser {
 
     fn parse_rec(&mut self, min_bp: u8) -> SExpr {
         let mut lhs = match self.lexer.next() {
-            token => {
+            Some(token) => {
                 if matches!(token, Token::ADD)
                     || matches!(token, Token::SUB)
                     || matches!(token, Token::EXP)
@@ -50,17 +50,24 @@ impl Parser {
                     SExpr::Cons(token, vec![rhs])
                 } else if matches!(token, Token::LPAREN) {
                     let sub = self.parse_rec(0);
-                    assert!(matches!(self.lexer.next(), Token::RPAREN));
+                    assert!(matches!(self.lexer.next(), Some(Token::RPAREN)));
                     sub
                 } else {
                     SExpr::Atom(token)
                 }
             }
+            None =>{
+                SExpr::Atom(Token::EMPTY)
+            }
         };
 
         loop {
-            let op = self.lexer.peek().clone();
+            let op = self.lexer.peek();
 
+            if op.is_none(){
+                break
+            }
+            let op = op.unwrap().clone();
             if let Some(left_bp) = Parser::postfix_binding_power(&op) {
                 let rhs = self.parse_rec(left_bp);
                 SExpr::Cons(op, vec![rhs]);

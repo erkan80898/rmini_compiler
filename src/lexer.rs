@@ -1,5 +1,5 @@
+use std::collections::VecDeque;
 use std::io::{Error, ErrorKind};
-
 #[derive(Debug, Clone)]
 pub enum Token {
     IF,
@@ -26,7 +26,7 @@ pub enum Token {
     GREATER,
     GEQ,
     LET,
-    EOF,
+    EMPTY,
     IDENT(String),
     STR(String),
     INT(i32),
@@ -35,14 +35,13 @@ pub enum Token {
 
 #[derive(Debug)]
 pub struct Lexer {
-    token_list: Vec<Token>,
-    pos: usize,
+    token_list: VecDeque<Token>,
 }
 
 impl Lexer {
     pub fn scan(file_name: String) -> Result<Lexer, Error> {
         let buf = std::fs::read(file_name)?;
-        let mut token_list = Vec::new();
+        let mut token_list = VecDeque::new();
         let mut ln_num = 0;
 
         let s: Vec<char> = String::from_utf8(buf)
@@ -67,70 +66,70 @@ impl Lexer {
 
             match current {
                 '+' => {
-                    token_list.push(Token::ADD);
+                    token_list.push_back(Token::ADD);
                     i += 1;
                 }
 
                 '-' => {
                     if peek == '>' {
-                        token_list.push(Token::RETURNSIG);
+                        token_list.push_back(Token::RETURNSIG);
                         i += 2;
                     } else {
-                        token_list.push(Token::SUB);
+                        token_list.push_back(Token::SUB);
                         i += 1;
                     }
                 }
 
                 '*' => {
                     if peek == '*' {
-                        token_list.push(Token::EXP);
+                        token_list.push_back(Token::EXP);
                         i += 2;
                     } else {
-                        token_list.push(Token::MUL);
+                        token_list.push_back(Token::MUL);
                         i += 1;
                     }
                 }
                 '/' => {
-                    token_list.push(Token::DIV);
+                    token_list.push_back(Token::DIV);
                     i += 1;
                 }
 
                 '=' => {
                     if peek == '=' {
-                        token_list.push(Token::EQ);
+                        token_list.push_back(Token::EQ);
                         i += 2;
                     } else {
-                        token_list.push(Token::ASSIGN);
+                        token_list.push_back(Token::ASSIGN);
                         i += 1;
                     }
                 }
 
                 '!' => {
                     if peek == '=' {
-                        token_list.push(Token::NEQ);
+                        token_list.push_back(Token::NEQ);
                         i += 2;
                     } else {
-                        token_list.push(Token::NOT);
+                        token_list.push_back(Token::NOT);
                         i += 1;
                     }
                 }
 
                 '<' => {
                     if peek == '=' {
-                        token_list.push(Token::LEQ);
+                        token_list.push_back(Token::LEQ);
                         i += 2;
                     } else {
-                        token_list.push(Token::LESS);
+                        token_list.push_back(Token::LESS);
                         i += 1;
                     }
                 }
 
                 '>' => {
                     if peek == '=' {
-                        token_list.push(Token::GEQ);
+                        token_list.push_back(Token::GEQ);
                         i += 2;
                     } else {
-                        token_list.push(Token::GREATER);
+                        token_list.push_back(Token::GREATER);
                         i += 1;
                     }
                 }
@@ -141,36 +140,36 @@ impl Lexer {
                         peek = s[j];
                     }
                     if j - i == 1 {
-                        token_list.push(Token::STR(String::new()));
+                        token_list.push_back(Token::STR(String::new()));
                     } else {
                         let word = s[i + 1..j].iter().collect::<String>();
-                        token_list.push(Token::STR(word));
+                        token_list.push_back(Token::STR(word));
                     }
                     i = j + 1;
                 }
 
                 '(' => {
-                    token_list.push(Token::LPAREN);
+                    token_list.push_back(Token::LPAREN);
                     i += 1;
                 }
 
                 ')' => {
-                    token_list.push(Token::RPAREN);
+                    token_list.push_back(Token::RPAREN);
                     i += 1;
                 }
 
                 '{' => {
-                    token_list.push(Token::LBRACE);
+                    token_list.push_back(Token::LBRACE);
                     i += 1;
                 }
 
                 '}' => {
-                    token_list.push(Token::RBRACE);
+                    token_list.push_back(Token::RBRACE);
                     i += 1;
                 }
 
                 ';' => {
-                    token_list.push(Token::SEMI);
+                    token_list.push_back(Token::SEMI);
                     i += 1;
                 }
 
@@ -194,9 +193,9 @@ impl Lexer {
                         let num = s[i..j].iter().collect::<String>();
 
                         if float {
-                            token_list.push(Token::FLOAT(num.parse::<f32>().unwrap()));
+                            token_list.push_back(Token::FLOAT(num.parse::<f32>().unwrap()));
                         } else {
-                            token_list.push(Token::INT(num.parse::<i32>().unwrap()));
+                            token_list.push_back(Token::INT(num.parse::<i32>().unwrap()));
                         }
 
                         i = j;
@@ -208,17 +207,17 @@ impl Lexer {
                         let word = &s[i..j];
 
                         if word == ['w', 'h', 'i', 'l', 'e'] {
-                            token_list.push(Token::WHILE);
+                            token_list.push_back(Token::WHILE);
                         } else if word == ['i', 'f'] {
-                            token_list.push(Token::IF);
+                            token_list.push_back(Token::IF);
                         } else if word == ['e', 'l', 's', 'e'] {
-                            token_list.push(Token::ELSE)
+                            token_list.push_back(Token::ELSE)
                         } else if word == ['r', 'e', 't', 'u', 'r', 'n'] {
-                            token_list.push(Token::RETURN)
+                            token_list.push_back(Token::RETURN)
                         } else if word == ['l', 'e', 't'] {
-                            token_list.push(Token::LET);
+                            token_list.push_back(Token::LET);
                         } else {
-                            token_list.push(Token::IDENT(word.iter().collect()));
+                            token_list.push_back(Token::IDENT(word.iter().collect()));
                         }
                         i = j;
                     } else {
@@ -230,23 +229,14 @@ impl Lexer {
                 }
             }
         }
-        Ok(Self { token_list, pos: 0 })
+        Ok(Self { token_list})
     }
 
-    pub fn next(&mut self) -> Token {
-        let item = self.token_list[self.pos].clone();
-        self.pos += 1;
-        item
+    pub fn next(&mut self) -> Option<Token> {
+        self.token_list.pop_front()
     }
 
-    pub fn peek(&mut self) -> &Token {
-        if self.pos == self.token_list.len() - 1 {
-            return &Token::EOF;
-        }
-        &self.token_list[self.pos]
-    }
-
-    pub fn pos(&self) -> usize {
-        self.pos
+    pub fn peek(&mut self) -> Option<&Token> {
+        self.token_list.front()
     }
 }
